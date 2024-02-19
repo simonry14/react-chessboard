@@ -58,6 +58,7 @@ interface ChessboardProviderContext {
   customPremoveLightSquareStyle: RequiredChessboardProps["customPremoveLightSquareStyle"];
   customSquare: RequiredChessboardProps["customSquare"];
   customSquareStyles: ChessboardProps["customSquareStyles"];
+  dropOffBoardAction: ChessboardProps["dropOffBoardAction"];
   id: RequiredChessboardProps["id"];
   isDraggablePiece: RequiredChessboardProps["isDraggablePiece"];
   onDragOverSquare: RequiredChessboardProps["onDragOverSquare"];
@@ -73,6 +74,8 @@ interface ChessboardProviderContext {
   promotionDialogVariant: RequiredChessboardProps["promotionDialogVariant"];
   showBoardNotation: RequiredChessboardProps["showBoardNotation"];
   snapToCursor: RequiredChessboardProps["snapToCursor"];
+    onSparePieceDrop: ChessboardProps["onSparePieceDrop"];
+  onPieceDropOffBoard: ChessboardProps["onPieceDropOffBoard"];
 
   // Exported by context
   arrows: Arrow[];
@@ -81,6 +84,7 @@ interface ChessboardProviderContext {
   clearCurrentRightClickDown: () => void;
   currentPosition: BoardPosition;
   currentRightClickDown?: Square;
+  deletePieceFromSquare: (sq: Square) => void;
   drawNewArrow: (from: Square, to: Square) => void;
   handleSetPosition: (
     sourceSq: Square,
@@ -88,6 +92,7 @@ interface ChessboardProviderContext {
     piece: Piece,
     wasManualDropOverride?: boolean
   ) => void;
+   handleSparePieceDrop: (piece: Piece, targetSq: Square) => void;
   isWaitingForAnimation: boolean;
   lastPieceColour: string | undefined;
   newArrow?: Arrow;
@@ -147,6 +152,8 @@ export const ChessboardProvider = forwardRef(
       onPieceDragBegin = () => {},
       onPieceDragEnd = () => {},
       onPieceDrop = () => true,
+      onSparePieceDrop = () => true,
+      onPieceDropOffBoard = () => {},
       onPromotionCheck = (sourceSquare, targetSquare, piece) => {
         return (
           ((piece === "wP" &&
@@ -365,9 +372,9 @@ export const ChessboardProvider = forwardRef(
         }
       } else {
         // delete if dropping off board
-        if (dropOffBoardAction === "trash" && !targetSq) {
-          delete newOnDropPosition[sourceSq];
-        }
+       // if (dropOffBoardAction === "trash" && !targetSq) {
+       //   delete newOnDropPosition[sourceSq];
+       // }
 
         // delete source piece
         delete newOnDropPosition[sourceSq];
@@ -381,6 +388,16 @@ export const ChessboardProvider = forwardRef(
 
       // inform latest position information
       getPositionObject(newOnDropPosition);
+    }
+
+     function deletePieceFromSquare(square: Square) {
+      const positionCopy = { ...currentPosition };
+
+      delete positionCopy[square];
+      setCurrentPosition(positionCopy);
+
+      // inform latest position information
+      getPositionObject(positionCopy);
     }
 
     function attemptPremove(newPieceColour?: string) {
@@ -414,6 +431,19 @@ export const ChessboardProvider = forwardRef(
           clearPremoves();
         }
       }
+    }
+
+     function handleSparePieceDrop(piece: Piece, targetSq: Square) {
+      const isValidDrop = onSparePieceDrop(piece, targetSq);
+
+      if (!isValidDrop) return;
+      const newOnDropPosition = { ...currentPosition };
+      // add piece in new position
+      newOnDropPosition[targetSq] = piece;
+      setCurrentPosition(newOnDropPosition);
+
+      // inform latest position information
+      getPositionObject(newOnDropPosition);
     }
 
     function clearPremoves(clearLastPieceColour = true) {
@@ -474,6 +504,7 @@ export const ChessboardProvider = forwardRef(
       onPieceDragBegin,
       onPieceDragEnd,
       onPieceDrop,
+        onSparePieceDrop,
       onPromotionCheck,
       onPromotionPieceSelect,
       onSquareClick,
@@ -491,6 +522,7 @@ export const ChessboardProvider = forwardRef(
       clearCurrentRightClickDown,
       currentPosition,
       handleSetPosition,
+       handleSparePieceDrop,
       isWaitingForAnimation,
       lastPieceColour,
       onRightClickDown,
@@ -505,6 +537,9 @@ export const ChessboardProvider = forwardRef(
       showPromoteDialog,
       autoPromoteToQueen,
       currentRightClickDown,
+      dropOffBoardAction,
+      deletePieceFromSquare,
+      onPieceDropOffBoard,
     };
 
     return (
