@@ -25,14 +25,17 @@ export function Piece({
     boardOrientation,
     chessPieces,
     currentPosition,
+    deletePieceFromSquare,
+    dropOffBoardAction,
     id,
     isDraggablePiece,
     isWaitingForAnimation,
     onPieceClick,
     onPieceDragBegin,
     onPieceDragEnd,
-    positionDifferences,
+    onPieceDropOffBoard,
     onPromotionCheck,
+    positionDifferences,
   } = useChessboard();
 
   const [pieceStyle, setPieceStyle] = useState({
